@@ -8,7 +8,7 @@ interface Options extends JsonObject {
 }
 
 export default createBuilder<Options>((options, context) => {
-  return new Promise<BuilderOutput>(() => {
+  return new Promise<BuilderOutput>((resolve, reject) => {
     context.reportStatus(`Executing "${options.command}"...`);
     const child = childProcess.spawn(options.command, options.args, { stdio: 'pipe' });
 
@@ -17,13 +17,12 @@ export default createBuilder<Options>((options, context) => {
     });
     child.stderr.on('data', (data) => {
       context.logger.error(data.toString());
+      reject();
     });
 
-    return new Promise<BuilderOutput>(resolve => {
-      context.reportStatus(`Done.`);
-      child.on('close', code => {
-        resolve({ success: code === 0 });
-      });
+    context.reportStatus(`Done.`);
+    child.on('close', code => {
+      resolve({ success: code === 0 });
     });
   });
 });
